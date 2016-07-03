@@ -172,7 +172,7 @@ void WX_VIEW_CONTROLS::onWheel( wxMouseEvent& aEvent )
                dy = delta_move;
                break;
             case wxMOUSE_WHEEL_HORIZONTAL:
-               dx = delta_move;
+               dx = -delta_move;
                break;
             default:
                break;
