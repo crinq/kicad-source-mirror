@@ -40,7 +40,7 @@ WX_VIEW_CONTROLS::WX_VIEW_CONTROLS( VIEW* aView, wxScrolledCanvas* aParentPanel 
 {
     m_parentPanel->Connect( wxEVT_MOTION,
                             wxMouseEventHandler( WX_VIEW_CONTROLS::onMotion ), NULL, this );
-#ifdef USE_OSX_MAGNIFY_EVENT
+#if wxCHECK_VERSION( 3, 1, 0 ) || defined( USE_OSX_MAGNIFY_EVENT )
     m_parentPanel->Connect( wxEVT_MAGNIFY,
                             wxMouseEventHandler( WX_VIEW_CONTROLS::onMagnify ), NULL, this );
 #endif
@@ -115,6 +115,7 @@ void WX_VIEW_CONTROLS::onWheel( wxMouseEvent& aEvent )
     }
     else
     {
+      if(aEvent.GetWheelDelta() > 100){
         // Zooming
         wxLongLong  timeStamp   = wxGetLocalTimeMillis();
         double      timeDiff    = timeStamp.ToDouble() - m_timeStamp.ToDouble();
@@ -161,13 +162,33 @@ void WX_VIEW_CONTROLS::onWheel( wxMouseEvent& aEvent )
             VECTOR2D anchor = m_view->ToWorld( VECTOR2D( aEvent.GetX(), aEvent.GetY() ) );
             m_view->SetScale( m_view->GetScale() * zoomScale, anchor );
         }
+      }
+      else{
+         int delta_move = aEvent.GetWheelRotation();
+         int dx = 0;
+         int dy = 0;
+         switch(aEvent.GetWheelAxis()){
+            case wxMOUSE_WHEEL_VERTICAL:
+               dy = delta_move;
+               break;
+            case wxMOUSE_WHEEL_HORIZONTAL:
+               dx = delta_move;
+               break;
+            default:
+               break;
+         }
+         VECTOR2D   d = m_dragStartPoint - VECTOR2D( dx, dy );
+         VECTOR2D   delta = m_view->ToWorld( d, false );
+         m_view->SetCenter( m_view->GetCenter() + delta );
+         //aEvent.StopPropagation();
+      }
     }
 
     aEvent.Skip();
 }
 
 
-#ifdef USE_OSX_MAGNIFY_EVENT
+#if wxCHECK_VERSION( 3, 1, 0 ) || defined( USE_OSX_MAGNIFY_EVENT )
 void WX_VIEW_CONTROLS::onMagnify( wxMouseEvent& aEvent )
 {
     // Scale based on the magnification from our underlying magnification event.

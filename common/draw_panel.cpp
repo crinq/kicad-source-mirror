@@ -72,7 +72,7 @@ BEGIN_EVENT_TABLE( EDA_DRAW_PANEL, wxScrolledWindow )
     EVT_LEAVE_WINDOW( EDA_DRAW_PANEL::OnMouseLeaving )
     EVT_ENTER_WINDOW( EDA_DRAW_PANEL::OnMouseEntering )
     EVT_MOUSEWHEEL( EDA_DRAW_PANEL::OnMouseWheel )
-#ifdef USE_OSX_MAGNIFY_EVENT
+#if wxCHECK_VERSION( 3, 1, 0 ) || defined( USE_OSX_MAGNIFY_EVENT )
     EVT_MAGNIFY( EDA_DRAW_PANEL::OnMagnify )
 #endif
     EVT_MOUSE_EVENTS( EDA_DRAW_PANEL::OnMouseEvent )
@@ -967,10 +967,29 @@ void EDA_DRAW_PANEL::OnMouseWheel( wxMouseEvent& event )
         }
         else if( event.ControlDown() && !event.ShiftDown() )
             cmd.SetId( ID_PAN_LEFT );
-        else if( offCenterReq )
-            cmd.SetId( ID_OFFCENTER_ZOOM_IN );
-        else
-            cmd.SetId( ID_POPUP_ZOOM_IN );
+         else if(event.GetWheelDelta() > 100){
+            if( offCenterReq )
+                cmd.SetId( ID_OFFCENTER_ZOOM_IN );
+            else
+                cmd.SetId( ID_POPUP_ZOOM_IN );
+         }
+        else{
+           int x, y;
+           GetViewStart( &x, &y );
+           int ppux, ppuy;
+           GetScrollPixelsPerUnit( &ppux, &ppuy );
+           int delta_move = event.GetWheelRotation();
+          switch(event.GetWheelAxis()){
+             case wxMOUSE_WHEEL_VERTICAL:
+               Scroll(x, y - delta_move / ppuy);
+               break;
+             case wxMOUSE_WHEEL_HORIZONTAL:
+               Scroll(x + delta_move / ppux, y);
+               break;
+             default:
+                break;
+          }
+        }
     }
     else if( event.GetWheelRotation() < 0 )
     {
@@ -983,10 +1002,29 @@ void EDA_DRAW_PANEL::OnMouseWheel( wxMouseEvent& event )
         }
         else if( event.ControlDown() && !event.ShiftDown() )
             cmd.SetId( ID_PAN_RIGHT );
-        else if( offCenterReq )
-            cmd.SetId( ID_OFFCENTER_ZOOM_OUT );
-        else
-            cmd.SetId( ID_POPUP_ZOOM_OUT );
+         else if(event.GetWheelDelta() > 100){
+            if( offCenterReq )
+                cmd.SetId( ID_OFFCENTER_ZOOM_OUT );
+            else
+                cmd.SetId( ID_POPUP_ZOOM_OUT );
+         }
+          else{
+             int x, y;
+            GetViewStart( &x, &y );
+              int ppux, ppuy;
+              GetScrollPixelsPerUnit( &ppux, &ppuy );
+              int delta_move = event.GetWheelRotation();
+             switch(event.GetWheelAxis()){
+               case wxMOUSE_WHEEL_VERTICAL:
+                 Scroll(x, y - delta_move / ppuy);
+                 break;
+               case wxMOUSE_WHEEL_HORIZONTAL:
+                 Scroll(x + delta_move / ppux, y);
+                 break;
+               default:
+                   break;
+             }
+          }
     }
 
     GetEventHandler()->ProcessEvent( cmd );
@@ -994,7 +1032,7 @@ void EDA_DRAW_PANEL::OnMouseWheel( wxMouseEvent& event )
 }
 
 
-#ifdef USE_OSX_MAGNIFY_EVENT
+#if wxCHECK_VERSION( 3, 1, 0 ) || defined( USE_OSX_MAGNIFY_EVENT )
 void EDA_DRAW_PANEL::OnMagnify( wxMouseEvent& event )
 {
     // Scale the panel around our cursor position.
