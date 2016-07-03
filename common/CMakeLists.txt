@@ -38,10 +38,13 @@ add_custom_target(
 
 set( GAL_SRCS
     # Common part
+    basic_gal.cpp
     draw_panel_gal.cpp
     painter.cpp
+    newstroke_font.cpp
     worksheet_viewitem.cpp
     origin_viewitem.cpp
+    gl_context_mgr.cpp
     gal/graphics_abstraction_layer.cpp
     gal/stroke_font.cpp
     gal/color4d.cpp
@@ -59,6 +62,7 @@ set( GAL_SRCS
     gal/opengl/vertex_manager.cpp
     gal/opengl/gpu_manager.cpp
     gal/opengl/opengl_compositor.cpp
+    gal/opengl/utils.cpp
 
     # Cairo GAL
     gal/cairo/cairo_gal.cpp
@@ -235,7 +239,6 @@ set( COMMON_SRCS
     lockfile.cpp
     msgpanel.cpp
     netlist_keywords.cpp
-    newstroke_font.cpp
     prependpath.cpp
     project.cpp
     ptree.cpp
@@ -295,6 +298,7 @@ set( COMMON_SRCS
     geometry/shape_poly_set.cpp
     geometry/shape_collisions.cpp
     geometry/shape_file_io.cpp
+    geometry/convex_hull.cpp
     )
 add_library( common STATIC ${COMMON_SRCS} )
 add_dependencies( common lib-dependencies )

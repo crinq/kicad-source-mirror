@@ -45,7 +45,7 @@
 #include <3d_struct.h>
 #include <modelparsers.h>
 #include <class_module.h>
-#include <CBBox.h>
+#include "3d_rendering/3d_render_raytracing/shapes3D/cbbox.h"
 
 class BOARD_DESIGN_SETTINGS;
 class EDA_3D_FRAME;
@@ -134,7 +134,7 @@ public:
     void   OnEraseBackground( wxEraseEvent& event );
     void   OnChar( wxKeyEvent& event );
     void   OnMouseWheel( wxMouseEvent& event );
-#ifdef USE_OSX_MAGNIFY_EVENT
+#if wxCHECK_VERSION( 3, 1, 0 ) || defined( USE_OSX_MAGNIFY_EVENT )
     void   OnMagnify( wxMouseEvent& event );
 #endif
     void   OnMouseMove( wxMouseEvent& event );

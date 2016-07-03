@@ -2,8 +2,8 @@
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
  * Copyright (C) 2009 Jean-Pierre Charras, jp.charras at wanadoo.fr
- * Copyright (C) 2009 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 1992-2011 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 2009-2016 Wayne Stambaugh <stambaughw@verizon.net>
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -92,10 +92,6 @@ enum main_id
     ID_PREFERENCES_HOTKEY_END,
     ID_PREFERENCES_CONFIGURE_PATHS,
 
-    ID_PREFRENCES_MACROS,
-    ID_PREFRENCES_MACROS_SAVE,
-    ID_PREFRENCES_MACROS_READ,
-
     ID_GEN_PLOT,
     ID_GEN_PLOT_PS,
     ID_GEN_PLOT_HPGL,
@@ -118,10 +114,9 @@ enum main_id
     ID_OPT_TOOLBAR,
     ID_AUX_TOOLBAR,
 
-    ID_HELP_COPY_VERSION_STRING,
-
     ID_EDIT,
     ID_NO_TOOL_SELECTED,
+    ID_ZOOM_SELECTION,
     ID_SEL_BG_COLOR,
 
     ID_REPEAT_BUTT,
@@ -138,6 +133,7 @@ enum main_id
     ID_LANGUAGE_PORTUGUESE,
     ID_LANGUAGE_ITALIAN,
     ID_LANGUAGE_SLOVENIAN,
+    ID_LANGUAGE_SLOVAK,
     ID_LANGUAGE_HUNGARIAN,
     ID_LANGUAGE_POLISH,
     ID_LANGUAGE_CZECH,
@@ -147,6 +143,7 @@ enum main_id
     ID_LANGUAGE_DUTCH,
     ID_LANGUAGE_JAPANESE,
     ID_LANGUAGE_BULGARIAN,
+    ID_LANGUAGE_LITHUANIAN,
     ID_LANGUAGE_CHOICE_END,
 
     ID_SET_REPEAT_OPTION,

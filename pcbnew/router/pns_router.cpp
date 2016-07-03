@@ -21,8 +21,6 @@
 #include <cstdio>
 #include <vector>
 
-#include <boost/foreach.hpp>
-
 #include <view/view.h>
 #include <view/view_item.h>
 #include <view/view_group.h>
@@ -60,6 +58,8 @@
 #include <class_track.h>
 #include <ratsnest_data.h>
 #include <layers_id_colors_and_visibility.h>
+#include <geometry/convex_hull.h>
+
 
 // an ugly singleton for drawing debug items within the router context.
 // To be fixed sometime in the future.
@@ -267,6 +267,27 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
                 break;
             }
 
+            case PAD_SHAPE_ROUNDRECT:
+            {
+                SHAPE_POLY_SET outline;
+                const int segmentToCircleCount = 64;
+
+                aPad->BuildPadShapePolygon( outline, wxSize( 0, 0 ),
+                                            segmentToCircleCount, 1.0 );
+
+                // TransformRoundRectToPolygon creates only one convex polygon
+                SHAPE_LINE_CHAIN& poly = outline.Outline( 0 );
+                SHAPE_CONVEX* shape = new SHAPE_CONVEX();
+
+                for( int ii = 0; ii < poly.PointCount(); ++ii )
+                {
+                    shape->Append( wxPoint( poly.Point( ii ).x, poly.Point( ii ).y ) );
+                }
+
+                solid->SetShape( shape );
+            }
+                break;
+
             default:
                 TRACEn( 0, "unsupported pad shape" );
                 delete solid;
@@ -343,6 +364,26 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
                 solid->SetShape( shape );
                 break;
             }
+
+            case PAD_SHAPE_ROUNDRECT:
+            {
+                SHAPE_POLY_SET outline;
+                const int segmentToCircleCount = 32;
+                aPad->BuildPadShapePolygon( outline, wxSize( 0, 0 ),
+                                            segmentToCircleCount, 1.0 );
+
+                // TransformRoundRectToPolygon creates only one convex polygon
+                SHAPE_LINE_CHAIN& poly = outline.Outline( 0 );
+                SHAPE_CONVEX* shape = new SHAPE_CONVEX();
+
+                for( int ii = 0; ii < poly.PointCount(); ++ii )
+                {
+                    shape->Append( wxPoint( poly.Point( ii ).x, poly.Point( ii ).y ) );
+                }
+
+                solid->SetShape( shape );
+            }
+                break;
 
             default:
                 TRACEn( 0, "unsupported pad shape" );
@@ -658,7 +699,7 @@ BOARD* PNS_ROUTER::GetBoard()
 
 void PNS_ROUTER::eraseView()
 {
-    BOOST_FOREACH( BOARD_ITEM* item, m_hiddenItems )
+    for( BOARD_ITEM* item : m_hiddenItems )
     {
         item->ViewSetVisible( true );
     }
@@ -692,7 +733,7 @@ void PNS_ROUTER::DisplayItem( const PNS_ITEM* aItem, int aColor, int aClearance 
 
 void PNS_ROUTER::DisplayItems( const PNS_ITEMSET& aItems )
 {
-    BOOST_FOREACH( const PNS_ITEM* item, aItems.CItems() )
+    for( const PNS_ITEM* item : aItems.CItems() )
         DisplayItem( item );
 }
 
@@ -753,7 +794,7 @@ void PNS_ROUTER::moveDragging( const VECTOR2I& aP, PNS_ITEM* aEndItem )
 void PNS_ROUTER::markViolations( PNS_NODE* aNode, PNS_ITEMSET& aCurrent,
                                  PNS_NODE::ITEM_VECTOR& aRemoved )
 {
-    BOOST_FOREACH( PNS_ITEM* item, aCurrent.Items() )
+    for( PNS_ITEM* item : aCurrent.Items() )
     {
         PNS_NODE::OBSTACLES obstacles;
 
@@ -770,10 +811,10 @@ void PNS_ROUTER::markViolations( PNS_NODE* aNode, PNS_ITEMSET& aCurrent,
             }
         }
 
-        BOOST_FOREACH( PNS_OBSTACLE& obs, obstacles )
+        for( PNS_OBSTACLE& obs : obstacles )
         {
             int clearance = aNode->GetClearance( item, obs.m_item );
-            std::auto_ptr<PNS_ITEM> tmp( obs.m_item->Clone() );
+            std::unique_ptr<PNS_ITEM> tmp( obs.m_item->Clone() );
             tmp->Mark( MK_VIOLATION );
             DisplayItem( tmp.get(), -1, clearance );
             aRemoved.push_back( obs.m_item );
@@ -795,12 +836,12 @@ void PNS_ROUTER::updateView( PNS_NODE* aNode, PNS_ITEMSET& aCurrent )
 
     aNode->GetUpdatedItems( removed, added );
 
-    BOOST_FOREACH( PNS_ITEM* item, added )
+    for( PNS_ITEM* item : added )
     {
         DisplayItem( item );
     }
 
-    BOOST_FOREACH( PNS_ITEM* item, removed )
+    for( PNS_ITEM* item : removed )
     {
         BOARD_CONNECTED_ITEM* parent = item->Parent();
 
@@ -835,7 +876,7 @@ void PNS_ROUTER::movePlacing( const VECTOR2I& aP, PNS_ITEM* aEndItem )
     m_placer->Move( aP, aEndItem );
     PNS_ITEMSET current = m_placer->Traces();
 
-    BOOST_FOREACH( const PNS_ITEM* item, current.CItems() )
+    for( const PNS_ITEM* item : current.CItems() )
     {
         if( !item->OfKind( PNS_ITEM::LINE ) )
             continue;
@@ -871,7 +912,7 @@ void PNS_ROUTER::CommitRouting( PNS_NODE* aNode )
         }
     }
 
-    BOOST_FOREACH( PNS_ITEM* item, added )
+    for( PNS_ITEM* item : added )
     {
         BOARD_CONNECTED_ITEM* newBI = NULL;
 
@@ -961,7 +1002,7 @@ void PNS_ROUTER::StopRouting()
         std::vector<int> nets;
         m_placer->GetModifiedNets( nets );
 
-        BOOST_FOREACH ( int n, nets )
+        for( int n : nets )
         {
             // Update the ratsnest with new changes
             m_board->GetRatsnest()->Recalculate( n );

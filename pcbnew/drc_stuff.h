@@ -30,7 +30,7 @@
 #define _DRC_STUFF_H
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #define OK_DRC  0
 #define BAD_DRC 1
@@ -195,7 +195,7 @@ private:
 
     PCB_EDIT_FRAME*     m_mainWindow;
     BOARD*              m_pcb;
-    DIALOG_DRC_CONTROL* m_ui;
+    DIALOG_DRC_CONTROL* m_drcDialog;
 
     DRC_LIST            m_unconnected;  ///< list of unconnected pads, as DRC_ITEMs
 
@@ -289,7 +289,7 @@ private:
 
     //-----<single "item" tests>-----------------------------------------
 
-    bool doNetClass( boost::shared_ptr<NETCLASS> aNetClass, wxString& msg );
+    bool doNetClass( std::shared_ptr<NETCLASS> aNetClass, wxString& msg );
 
     /**
      * Function doPadToPadsDrc
@@ -365,12 +365,12 @@ private:
 
     /**
      * Helper function checkMarginToCircle
-     * Check the distance from a point to
-     * a segment. the segment is expected starting at 0,0, and on the X axis
+     * Check the distance from a point to a segment.
+     * The segment is expected starting at 0,0, and on the X axis
      * (used to test DRC between a segment and a round pad, via or round end of a track
      * @param aCentre The coordinate of the circle's center
      * @param aRadius A "keep out" radius centered over the circle
-     * @param aLength The length of the segment (i.e. coordinate of end, becuase it is on
+     * @param aLength The length of the segment (i.e. coordinate of end, because it is on
      *                the X axis)
      * @return bool - true if distance >= radius, else
      *                false when distance < aRadius

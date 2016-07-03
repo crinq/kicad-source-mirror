@@ -32,8 +32,6 @@
 
 #include <layers_id_colors_and_visibility.h>    // Layers id definitions
 
-#include <wx/glcanvas.h>
-
 #ifdef __WXMAC__
 #  ifdef __DARWIN__
 #    include <OpenGL/glu.h>
@@ -71,6 +69,7 @@ enum DISPLAY3D_FLG {
     FL_GRID,
     FL_USE_COPPER_THICKNESS,
     FL_SHOW_BOARD_BODY,
+    FL_MOUSEWHEEL_PANNING,
     FL_USE_REALISTIC_MODE,
     FL_RENDER_SHADOWS,
     FL_RENDER_SHOW_HOLES_IN_ZONES,

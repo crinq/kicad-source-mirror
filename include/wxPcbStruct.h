@@ -32,7 +32,6 @@
 
 #include <pcb_base_edit_frame.h>
 #include <config_params.h>
-#include <class_macros_record.h>
 #include <class_undoredo_container.h>
 #include <zones.h>
 
@@ -83,23 +82,9 @@ class PCB_EDIT_FRAME : public PCB_BASE_EDIT_FRAME
     void updateTraceWidthSelectBox();
     void updateViaSizeSelectBox();
 
-    int             m_RecordingMacros;
-    MACROS_RECORDED m_Macros[10];
-
     /// The auxiliary right vertical tool bar used to access the microwave tools.
     wxAuiToolBar* m_microWaveToolBar;
 
-    /**
-     * Function loadFootprints
-     * loads the footprints for each #COMPONENT in \a aNetlist from the list of libraries.
-     *
-     * @param aNetlist is the netlist of components to load the footprints into.
-     * @param aReporter is the #REPORTER object to report to.
-     * @throw IO_ERROR if an I/O error occurs or a #PARSE_ERROR if a file parsing error
-     *           occurs while reading footprint library files.
-     */
-    void loadFootprints( NETLIST& aNetlist, REPORTER* aReporter )
-        throw( IO_ERROR, PARSE_ERROR );
 
 protected:
     PCB_LAYER_WIDGET* m_Layers;
@@ -225,6 +210,18 @@ public:
 
     virtual ~PCB_EDIT_FRAME();
 
+    /**
+     * Function loadFootprints
+     * loads the footprints for each #COMPONENT in \a aNetlist from the list of libraries.
+     *
+     * @param aNetlist is the netlist of components to load the footprints into.
+     * @param aReporter is the #REPORTER object to report to.
+     * @throw IO_ERROR if an I/O error occurs or a #PARSE_ERROR if a file parsing error
+     *           occurs while reading footprint library files.
+     */
+    void LoadFootprints( NETLIST& aNetlist, REPORTER* aReporter )
+        throw( IO_ERROR, PARSE_ERROR );
+
     void OnQuit( wxCommandEvent& event );
 
     /**
@@ -262,7 +259,6 @@ public:
     void OnUpdateLayerSelectBox( wxUpdateUIEvent& aEvent );
     void OnUpdateDrcEnable( wxUpdateUIEvent& aEvent );
     void OnUpdateShowBoardRatsnest( wxUpdateUIEvent& aEvent );
-    void OnUpdateShowModuleRatsnest( wxUpdateUIEvent& aEvent );
     void OnUpdateAutoDeleteTrack( wxUpdateUIEvent& aEvent );
     void OnUpdateViaDrawMode( wxUpdateUIEvent& aEvent );
     void OnUpdateTraceDrawMode( wxUpdateUIEvent& aEvent );
@@ -280,27 +276,12 @@ public:
     void OnUpdateMuWaveToolbar( wxUpdateUIEvent& aEvent );
     void OnLayerColorChange( wxCommandEvent& aEvent );
     void OnConfigurePaths( wxCommandEvent& aEvent );
+    void OnUpdatePCBFromSch( wxCommandEvent& event );
 
     /**
-     * Function RecordMacros.
-     * records sequence of hotkeys and cursor positions to a macro.
-     * @param aDC = current device context
-     * @param aNumber The current number macros.
+     * called when the alt key is pressed during a mouse wheel action
      */
-    void RecordMacros( wxDC* aDC, int aNumber );
-
-    /**
-     * Function CallMacros
-     * play hotkeys and cursor position from a recorded macro.
-     * @param aDC = current device context
-     * @param aPosition The current cursor position in logical (drawing) units.
-     * @param aNumber The current number macros.
-     */
-    void CallMacros( wxDC* aDC, const wxPoint& aPosition, int aNumber );
-
-    void SaveMacros();
-
-    void ReadMacros();
+    void OnAltWheel( wxCommandEvent& event );
 
     /**
      * Function PrintPage , virtual
@@ -620,7 +601,7 @@ public:
     ///> @copydoc EDA_DRAW_FRAME::UseGalCanvas()
     void UseGalCanvas( bool aEnable );
 
-    bool GeneralControl( wxDC* aDC, const wxPoint& aPosition, int aHotKey = 0 );
+    bool GeneralControl( wxDC* aDC, const wxPoint& aPosition, EDA_KEY aHotKey = 0 );
 
     /**
      * Function ShowDesignRulesEditor
@@ -716,7 +697,7 @@ public:
      * @param aKey = the key modifiers (Alt, Shift ...)
      * @return the block command id (BLOCK_MOVE, BLOCK_COPY...)
      */
-    virtual int BlockCommand( int aKey );
+    virtual int BlockCommand( EDA_KEY aKey );
 
     /**
      * Function HandleBlockPlace()
@@ -811,11 +792,12 @@ public:
      * @param aSide = 0 to list footprints on BACK side,
      *                1 to list footprints on FRONT side
      *                2 to list footprints on both sides
+     * @param aFormatCSV = true to use a comma separated file (CSV) format; defautl = false
      * @return the number of footprints found on aSide side,
      *    or -1 if the file could not be created
      */
     int DoGenFootprintsPositionFile( const wxString& aFullFileName, bool aUnitsMM,
-                                      bool aForceSmdItems, int aSide );
+                                      bool aForceSmdItems, int aSide, bool aFormatCSV = false );
 
     /**
      * Function GenFootprintsReport
@@ -1682,44 +1664,6 @@ public:
     MODULE* Create_MuWavePolygonShape();
 
     void Begin_Self( wxDC* DC );
-
-    /**
-     * Function Genre_Self
-     * creates a self-shaped coil for microwave applications.
-     * - Length Mself.lng
-     * - Extremities Mself.m_Start and Mself.m_End
-     *
-     * We must determine:
-     * Mself.nbrin = number of segments perpendicular to the direction
-     * (The coil nbrin will demicercles + 1 + 2 1 / 4 circle)
-     * Mself.lbrin = length of a strand
-     * Mself.radius = radius of rounded parts of the coil
-     * Mself.delta = segments extremities connection between him and the coil even
-     *
-     * The equations are
-     * Mself.m_Size.x = 2 * Mself.radius + Mself.lbrin
-     * Mself.m_Size.y * Mself.delta = 2 + 2 * Mself.nbrin * Mself.radius
-     * Mself.lng = 2 * Mself.delta / / connections to the coil
-     + (Mself.nbrin-2) * Mself.lbrin / / length of the strands except 1st and last
-     + (Mself.nbrin 1) * (PI * Mself.radius) / / length of rounded
-     * Mself.lbrin + / 2 - Melf.radius * 2) / / length of 1st and last bit
-     *
-     * The constraints are:
-     * Nbrin >= 2
-     * Mself.radius < Mself.m_Size.x
-     * Mself.m_Size.y = Mself.radius * 4 + 2 * Mself.raccord
-     * Mself.lbrin> Mself.radius * 2
-     *
-     * The calculation is conducted in the following way:
-     * Initially:
-     * Nbrin = 2
-     * Radius = 4 * m_Size.x (arbitrarily fixed value)
-     * Then:
-     * Increasing the number of segments to the desired length
-     * (Radius decreases if necessary)
-     *
-     */
-    MODULE* Genere_Self( wxDC* DC );
 
     void ShowChangedLanguage();         // override EDA_BASE_FRAME virtual
 

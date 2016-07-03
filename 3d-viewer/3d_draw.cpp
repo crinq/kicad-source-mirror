@@ -56,8 +56,10 @@
 #include <info3d_visu.h>
 #include <trackball.h>
 #include <3d_draw_basic_functions.h>
+#include "3d_rendering/3d_render_ogl_legacy/ogl_legacy_utils.h"
+#include <gl_context_mgr.h>
 
-#include <CImage.h>
+#include <cimage.h>
 #include <reporter.h>
 
 
@@ -300,7 +302,7 @@ void EDA_3D_CANVAS::Redraw()
     // Display build time at the end of build
     unsigned strtime = GetRunningMicroSecs();
 
-    SetCurrent( *m_glRC );
+    GL_CONTEXT_MANAGER::Get().LockCtx( m_glRC, this );
 
     // Set the OpenGL viewport according to the client size of this canvas.
     // This is done here rather than in a wxSizeEvent handler because our
@@ -317,7 +319,7 @@ void EDA_3D_CANVAS::Redraw()
         generateFakeShadowsTextures( &errorReporter, &activityReporter );
     }
 
-    // *MUST* be called *after*  SetCurrent( ):
+    // *MUST* be called *after* GL_CONTEXT_MANAGER::LockCtx():
     glViewport( 0, 0, size.x, size.y );
 
     // clear color and depth buffers
@@ -608,6 +610,7 @@ void EDA_3D_CANVAS::Redraw()
     */
 
     SwapBuffers();
+    GL_CONTEXT_MANAGER::Get().UnlockCtx( m_glRC );
 
     // Show calculation time if some activity was reported
     if( activityReporter.HasMessage() )
@@ -1128,16 +1131,15 @@ void EDA_3D_CANVAS::render3DComponentShape( MODULE* module,
             shape3D->Render( aIsRenderingJustNonTransparentObjects,
                              aIsRenderingJustTransparentObjects );
 
-            if( isEnabled( FL_RENDER_SHOW_MODEL_BBOX ) )
+            const CBBOX &shapeBBox = shape3D->getBBox();
+            if( isEnabled( FL_RENDER_SHOW_MODEL_BBOX ) && shapeBBox.IsInitialized() )
             {
                 // Set the alpha current color to opaque
                 float currentColor[4];
                 glGetFloatv( GL_CURRENT_COLOR,currentColor );
                 currentColor[3] = 1.0f;
                 glColor4fv( currentColor );
-
-                CBBOX thisBBox = shape3D->getBBox();
-                thisBBox.GLdebug();
+                OGL_draw_bbox( shapeBBox );
             }
 
             glPopMatrix();

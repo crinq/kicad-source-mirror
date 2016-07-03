@@ -20,9 +20,9 @@
 
 #include <wx/numdlg.h>
 
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <boost/bind.hpp>
+#include <functional>
+using namespace std::placeholders;
 
 #include "class_draw_panel_gal.h"
 #include "class_board.h"
@@ -99,7 +99,7 @@ static TOOL_ACTION ACT_CustomTrackWidth( "pcbnew.InteractiveRouter.CustomTrackVi
 static TOOL_ACTION ACT_SwitchPosture( "pcbnew.InteractiveRouter.SwitchPosture", AS_CONTEXT,
     TOOL_ACTION::LegacyHotKey( HK_SWITCH_TRACK_POSTURE ),
     _( "Switch Track Posture" ),
-    _( "Switches posture of the currenly routed track." ),
+    _( "Switches posture of the currently routed track." ),
     change_entry_orient_xpm );
 
 static TOOL_ACTION ACT_SetDpDimensions( "pcbnew.InteractiveRouter.SetDpDimensions",
@@ -121,7 +121,7 @@ public:
     CONTEXT_TRACK_WIDTH_MENU()
         : CONTEXT_TRACK_VIA_SIZE_MENU( true, true ), m_board( NULL )
     {
-        SetMenuHandler( boost::bind( &CONTEXT_TRACK_WIDTH_MENU::EventHandler, this, _1 ) );
+        SetMenuHandler( std::bind( &CONTEXT_TRACK_WIDTH_MENU::EventHandler, this, _1 ) );
     }
 
     void SetBoard( BOARD* aBoard )
@@ -532,9 +532,12 @@ bool ROUTER_TOOL::finishInteractive()
     m_router->StopRouting();
 
     // Save the recent changes in the undo buffer
-    m_frame->SaveCopyInUndoList( m_router->GetUndoBuffer(), UR_UNSPECIFIED );
-    m_router->ClearUndoBuffer();
-    m_frame->OnModify();
+    if( m_router->GetUndoBuffer().GetCount() > 0 )
+    {
+        m_frame->SaveCopyInUndoList( m_router->GetUndoBuffer(), UR_UNSPECIFIED );
+        m_router->ClearUndoBuffer();
+        m_frame->OnModify();
+    }
 
     m_ctls->SetAutoPan( false );
     m_ctls->ForceCursorPosition( false );
@@ -602,8 +605,10 @@ void ROUTER_TOOL::performRouting()
         }
         else if( evt->IsAction( &ACT_EndTrack ) )
         {
-            if( m_router->FixRoute( m_endSnapPoint, m_endItem ) )
-                break;
+            bool still_routing = true;
+            while( still_routing )
+                still_routing = m_router->FixRoute( m_endSnapPoint, m_endItem );
+            break;
         }
 
         handleCommonEvents( *evt );
@@ -676,7 +681,7 @@ int ROUTER_TOOL::mainLoop( PNS_ROUTER_MODE aMode )
 
     m_startSnapPoint = getViewControls()->GetCursorPosition();
 
-    std::auto_ptr<ROUTER_TOOL_MENU> ctxMenu( new ROUTER_TOOL_MENU( board, aMode ) );
+    std::unique_ptr<ROUTER_TOOL_MENU> ctxMenu( new ROUTER_TOOL_MENU( board, aMode ) );
     SetContextMenu( ctxMenu.get() );
 
     // Main loop: keep receiving events

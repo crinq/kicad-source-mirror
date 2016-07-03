@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004-2015 Jean-Pierre Charras, jp.charras at wanadoo.fr
  * Copyright (C) 2008-2015 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 2004-2015 KiCad Developers, see change_log.txt for contributors.
+ * Copyright (C) 2004-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -49,7 +49,6 @@
 #include <lib_rectangle.h>
 #include <lib_text.h>
 
-#include <boost/foreach.hpp>
 
 // the separator char between the subpart id and the reference
 // 0 (no separator) or '.' or some other character
@@ -111,7 +110,7 @@ const wxString LIB_ALIAS::GetLibraryName()
 
 bool LIB_ALIAS::IsRoot() const
 {
-    return Cmp_KEEPCASE( name, shared->GetName() ) == 0;
+    return name == shared->GetName();
 }
 
 
@@ -152,19 +151,19 @@ bool LIB_ALIAS::SaveDoc( OUTPUTFORMATTER& aFormatter )
 
 bool LIB_ALIAS::operator==( const wxChar* aName ) const
 {
-    return Cmp_KEEPCASE( name, aName ) == 0;
+    return name == aName;
 }
 
 
 bool operator<( const LIB_ALIAS& aItem1, const LIB_ALIAS& aItem2 )
 {
-    return Cmp_KEEPCASE( aItem1.GetName(), aItem2.GetName() ) < 0;
+    return aItem1.GetName() < aItem2.GetName();
 }
 
 
 int LibraryEntryCompare( const LIB_ALIAS* aItem1, const LIB_ALIAS* aItem2 )
 {
-    return Cmp_KEEPCASE( aItem1->GetName(), aItem2->GetName() );
+    return aItem1->GetName().Cmp( aItem2->GetName() );
 }
 
 
@@ -224,7 +223,7 @@ LIB_PART::LIB_PART( LIB_PART& aPart, PART_LIB* aLibrary ) :
     m_dateModified        = aPart.m_dateModified;
     m_options             = aPart.m_options;
 
-    BOOST_FOREACH( LIB_ITEM& oldItem, aPart.GetDrawItemList() )
+    for( LIB_ITEM& oldItem : aPart.GetDrawItemList() )
     {
         if( oldItem.IsNew() )
             continue;
@@ -327,7 +326,7 @@ void LIB_PART::Draw( EDA_DRAW_PANEL* aPanel, wxDC* aDc, const wxPoint& aOffset, 
     if( ! (screen && screen->m_IsPrinting && GetGRForceBlackPenState())
             && (aColor == UNSPECIFIED_COLOR) )
     {
-        BOOST_FOREACH( LIB_ITEM& drawItem, drawings )
+        for( LIB_ITEM& drawItem : drawings )
         {
             if( drawItem.m_Fill != FILLED_WITH_BG_BODYCOLOR )
                 continue;
@@ -363,7 +362,7 @@ void LIB_PART::Draw( EDA_DRAW_PANEL* aPanel, wxDC* aDc, const wxPoint& aOffset, 
     // Track the index into the dangling pins list
     size_t pin_index = 0;
 
-    BOOST_FOREACH( LIB_ITEM& drawItem, drawings )
+    for( LIB_ITEM& drawItem : drawings )
     {
         if( aOnlySelected && !drawItem.IsSelected() )
             continue;
@@ -446,7 +445,7 @@ void LIB_PART::Plot( PLOTTER* aPlotter, int aUnit, int aConvert,
 
     // draw background for filled items using background option
     // Solid lines will be drawn after the background
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         // Lib Fields are not plotted here, because this plot function
         // is used to plot schematic items, which have they own fields
@@ -465,7 +464,7 @@ void LIB_PART::Plot( PLOTTER* aPlotter, int aUnit, int aConvert,
 
     // Not filled items and filled shapes are now plotted
     // (plot only items which are not already plotted)
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( item.Type() == LIB_FIELD_T )
             continue;
@@ -489,7 +488,7 @@ void LIB_PART::PlotLibFields( PLOTTER* aPlotter, int aUnit, int aConvert,
     aPlotter->SetColor( GetLayerColor( LAYER_FIELDS ) );
     bool fill = aPlotter->GetColorMode();
 
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( item.Type() != LIB_FIELD_T )
             continue;
@@ -607,7 +606,7 @@ void LIB_PART::GetPins( LIB_PINS& aList, int aUnit, int aConvert )
      * when .m_Unit == 0, the body item is common to units
      * when .m_Convert == 0, the body item is common to shapes
      */
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( item.Type() != LIB_PIN_T )    // we search pins only
             continue;
@@ -652,14 +651,14 @@ bool LIB_PART::PinsConflictWith( LIB_PART& aOtherPart, bool aTestNums, bool aTes
     LIB_PINS thisPinList;
     GetPins( thisPinList, /* aUnit */ 0, /* aConvert */ 0 );
 
-    BOOST_FOREACH( LIB_PIN* eachThisPin, thisPinList )
+    for( LIB_PIN* eachThisPin : thisPinList )
     {
         wxASSERT( eachThisPin );
         LIB_PINS otherPinList;
         aOtherPart.GetPins( otherPinList, /* aUnit */ 0, /* aConvert */ 0 );
         bool foundMatch = false;
 
-        BOOST_FOREACH( LIB_PIN* eachOtherPin, otherPinList )
+        for( LIB_PIN* eachOtherPin : otherPinList )
         {
             wxASSERT( eachOtherPin );
             // Same position?
@@ -822,7 +821,7 @@ bool LIB_PART::Save( OUTPUTFORMATTER& aFormatter )
 
         aFormatter.Print( 0, "DRAW\n" );
 
-        BOOST_FOREACH( LIB_ITEM& item, drawings )
+        for( LIB_ITEM& item : drawings )
         {
             if( item.Type() == LIB_FIELD_T )
                 continue;
@@ -1275,7 +1274,7 @@ void LIB_PART::GetFields( LIB_FIELDS& aList )
     }
 
     // Now grab all the rest of fields.
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( item.Type() != LIB_FIELD_T )
             continue;
@@ -1292,7 +1291,7 @@ void LIB_PART::GetFields( LIB_FIELDS& aList )
 
 LIB_FIELD* LIB_PART::GetField( int aId )
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( item.Type() != LIB_FIELD_T )
             continue;
@@ -1309,7 +1308,7 @@ LIB_FIELD* LIB_PART::GetField( int aId )
 
 LIB_FIELD* LIB_PART::FindField( const wxString& aFieldName )
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( item.Type() != LIB_FIELD_T )
             continue;
@@ -1381,7 +1380,7 @@ bool LIB_PART::LoadDateAndTime( char* aLine )
 
 void LIB_PART::SetOffset( const wxPoint& aOffset )
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         item.SetOffset( aOffset );
     }
@@ -1409,7 +1408,7 @@ bool LIB_PART::HasConversion() const
 
 void LIB_PART::ClearStatus()
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         item.m_Flags = 0;
     }
@@ -1420,7 +1419,7 @@ int LIB_PART::SelectItems( EDA_RECT& aRect, int aUnit, int aConvert, bool aEditP
 {
     int itemCount = 0;
 
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         item.ClearFlags( SELECTED );
 
@@ -1449,7 +1448,7 @@ int LIB_PART::SelectItems( EDA_RECT& aRect, int aUnit, int aConvert, bool aEditP
 
 void LIB_PART::MoveSelectedItems( const wxPoint& aOffset )
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( !item.IsSelected() )
             continue;
@@ -1464,7 +1463,7 @@ void LIB_PART::MoveSelectedItems( const wxPoint& aOffset )
 
 void LIB_PART::ClearSelectedItems()
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         item.m_Flags = 0;
     }
@@ -1536,7 +1535,7 @@ void LIB_PART::CopySelectedItems( const wxPoint& aOffset )
 
 void LIB_PART::MirrorSelectedItemsH( const wxPoint& aCenter )
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( !item.IsSelected() )
             continue;
@@ -1550,7 +1549,7 @@ void LIB_PART::MirrorSelectedItemsH( const wxPoint& aCenter )
 
 void LIB_PART::MirrorSelectedItemsV( const wxPoint& aCenter )
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( !item.IsSelected() )
             continue;
@@ -1564,7 +1563,7 @@ void LIB_PART::MirrorSelectedItemsV( const wxPoint& aCenter )
 
 void LIB_PART::RotateSelectedItems( const wxPoint& aCenter )
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( !item.IsSelected() )
             continue;
@@ -1581,7 +1580,7 @@ void LIB_PART::RotateSelectedItems( const wxPoint& aCenter )
 LIB_ITEM* LIB_PART::LocateDrawItem( int aUnit, int aConvert,
                                     KICAD_T aType, const wxPoint& aPoint )
 {
-    BOOST_FOREACH( LIB_ITEM& item, drawings )
+    for( LIB_ITEM& item : drawings )
     {
         if( ( aUnit && item.m_Unit && ( aUnit != item.m_Unit) )
             || ( aConvert && item.m_Convert && ( aConvert != item.m_Convert ) )
@@ -1672,7 +1671,9 @@ void LIB_PART::SetConversion( bool aSetConvert )
     // Duplicate items to create the converted shape
     if( aSetConvert )
     {
-        BOOST_FOREACH( LIB_ITEM& item, drawings )
+        std::vector< LIB_ITEM* > tmp;     // Temporarily store the duplicated pins here.
+
+        for( LIB_ITEM& item : drawings )
         {
             // Only pins are duplicated.
             if( item.Type() != LIB_PIN_T )
@@ -1682,9 +1683,13 @@ void LIB_PART::SetConversion( bool aSetConvert )
             {
                 LIB_ITEM* newItem = (LIB_ITEM*) item.Clone();
                 newItem->m_Convert = 2;
-                drawings.push_back( newItem );
+                tmp.push_back( newItem );
             }
         }
+
+        // Transfer the new pins to the LIB_PART.
+        for( unsigned i = 0;  i < tmp.size();  i++ )
+            drawings.push_back( tmp[i] );
     }
     else
     {
@@ -1728,7 +1733,7 @@ bool LIB_PART::HasAlias( const wxString& aName ) const
 
     for( size_t i = 0; i < m_aliases.size(); i++ )
     {
-        if( Cmp_KEEPCASE( aName, m_aliases[i]->GetName() ) == 0 )
+        if( aName == m_aliases[i]->GetName() )
             return true;
     }
 
@@ -1754,16 +1759,16 @@ void LIB_PART::SetAliases( const wxArrayString& aAliasList )
     }
 
     // Remove names in the current component that are not in the new alias list.
-    LIB_ALIASES::iterator it;
+    LIB_ALIASES::iterator it = m_aliases.begin();
 
-    for( it = m_aliases.begin(); it != m_aliases.end(); it++ )
+    while( it != m_aliases.end() )
     {
         int index = aAliasList.Index( (*it)->GetName(), false );
 
         if( index != wxNOT_FOUND || (*it)->IsRoot() )
-            continue;
-
-        it = m_aliases.erase( it );
+            ++it;
+        else
+            it = m_aliases.erase( it );
     }
 }
 
@@ -1780,7 +1785,7 @@ void LIB_PART::RemoveAlias( const wxString& aName )
 
     for( it = m_aliases.begin(); it != m_aliases.end(); it++ )
     {
-        if( Cmp_KEEPCASE( aName, (*it)->GetName() ) == 0 )
+        if( aName == (*it)->GetName() )
         {
             m_aliases.erase( it );
             break;
@@ -1852,7 +1857,7 @@ LIB_ALIAS* LIB_PART::GetAlias( const wxString& aName )
 
     for( size_t i = 0; i < m_aliases.size(); i++ )
     {
-        if( Cmp_KEEPCASE( aName, m_aliases[i]->GetName() ) == 0 )
+        if( aName == m_aliases[i]->GetName() )
             return m_aliases[i];
     }
 

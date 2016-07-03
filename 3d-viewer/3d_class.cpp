@@ -1,7 +1,7 @@
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
- * Copyright (C) 1992-2015 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,7 +29,13 @@
 
 #include "3d_viewer.h"
 #include "3d_struct.h"
+#include "common.h"
 #include "modelparsers.h"
+#include <kiway.h>
+#include <3d_cache.h>
+#include <3d_filename_resolver.h>
+
+extern KIWAY* TheKiway;
 
 
 void S3D_MASTER::Insert( S3D_MATERIAL* aMaterial )
@@ -131,26 +137,16 @@ void S3D_MASTER::SetShape3DName( const wxString& aShapeName )
     // if the m_Shape3DName is not an absolute path the default path
     // given by the environment variable KISYS3DMOD will be used
 
-    if( m_Shape3DName.StartsWith( wxT("${") ) )
-        m_Shape3DFullFilename = wxExpandEnvVars( m_Shape3DName );
+    if( m_Shape3DName.StartsWith( wxT("${") ) ||
+        m_Shape3DName.StartsWith( wxT("$(") ) )
+        m_Shape3DFullFilename = ExpandEnvVarSubstitutions( m_Shape3DName );
     else
         m_Shape3DFullFilename = m_Shape3DName;
 
-    wxFileName fnFull( m_Shape3DFullFilename );
-
-    if( !( fnFull.IsAbsolute() || m_Shape3DFullFilename.StartsWith( wxT(".") ) ) )
+    if( NULL != TheKiway )
     {
-        wxString default_path;
-        wxGetEnv( KISYS3DMOD, &default_path );
-
-        if( !( default_path.IsEmpty() ) )
-        {
-
-            if( !default_path.EndsWith( wxT("/") ) && !default_path.EndsWith( wxT("\\") ) )
-                default_path += wxT("/");
-
-            m_Shape3DFullFilename = default_path + m_Shape3DFullFilename;
-        }
+        m_Shape3DFullFilename = TheKiway->Prj().Get3DCacheManager()->GetResolver()
+            ->ResolvePath( m_Shape3DFullFilename );
     }
 
     return;

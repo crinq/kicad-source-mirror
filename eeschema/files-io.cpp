@@ -260,7 +260,7 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
 
     GetScreen()->SetFileName( fullFileName );
     g_RootSheet->SetFileName( fullFileName );
-    g_RootSheet->SetName( "root" );
+
     SetStatusText( wxEmptyString );
     ClearMsgPanel();
 
@@ -312,7 +312,7 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
         // Only do this if RescueNeverShow was not set.
         wxConfigBase *config = Kiface().KifaceSettings();
         bool rescueNeverShow = false;
-        config->Read( RESCUE_NEVER_SHOW_KEY, &rescueNeverShow, false );
+        config->Read( RescueNeverShowEntry, &rescueNeverShow, false );
 
         if( !rescueNeverShow )
         {
@@ -429,9 +429,9 @@ bool SCH_EDIT_FRAME::AppendOneEEProject()
                     sheet->SetName( tmp );
 
                 sheet->SetFileName( wxString::Format( wxT( "file%8.8lX.sch" ), (long) newtimestamp ) );
-                SCH_SCREEN* screen = new SCH_SCREEN( &Kiway() );
-                screen->SetMaxUndoItems( m_UndoRedoCountMax );
-                sheet->SetScreen( screen );
+                SCH_SCREEN* new_screen = new SCH_SCREEN( &Kiway() );
+                new_screen->SetMaxUndoItems( m_UndoRedoCountMax );
+                sheet->SetScreen( new_screen );
                 sheet->GetScreen()->SetFileName( sheet->GetFileName() );
             }
             // clear annotation and init new time stamp for the new components
@@ -447,6 +447,8 @@ bool SCH_EDIT_FRAME::AppendOneEEProject()
             bs = nextbs;
         }
     }
+
+    OnModify();
 
     // redraw base screen (ROOT) if necessary
     GetScreen()->SetGrid( ID_POPUP_GRID_LEVEL_1000 + m_LastGridSizeId );

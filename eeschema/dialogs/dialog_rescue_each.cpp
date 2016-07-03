@@ -31,11 +31,8 @@
 #include <class_libentry.h>
 #include <set>
 #include <vector>
-#include <boost/foreach.hpp>
 #include <project_rescue.h>
 #include <eeschema_config.h>
-#include <sch_sheet_path.h>
-
 
 class DIALOG_RESCUE_EACH: public DIALOG_RESCUE_EACH_BASE
 {
@@ -90,6 +87,9 @@ DIALOG_RESCUE_EACH::DIALOG_RESCUE_EACH( SCH_EDIT_FRAME* aParent, RESCUER& aRescu
            "\n"
            "The following changes are recommended to update the project." );
     m_lblInfo->SetLabel( info_message );
+
+    m_componentViewOld->SetLayoutDirection( wxLayout_LeftToRight );
+    m_componentViewNew->SetLayoutDirection( wxLayout_LeftToRight );
 }
 
 
@@ -126,7 +126,7 @@ bool DIALOG_RESCUE_EACH::TransferDataToWindow()
 void DIALOG_RESCUE_EACH::PopulateConflictList()
 {
     wxVector<wxVariant> data;
-    BOOST_FOREACH( RESCUE_CANDIDATE& each_candidate, m_Rescuer->m_all_candidates )
+    for( RESCUE_CANDIDATE& each_candidate : m_Rescuer->m_all_candidates )
     {
         data.clear();
         data.push_back( wxVariant( true ) );
@@ -150,7 +150,7 @@ void DIALOG_RESCUE_EACH::PopulateInstanceList()
     RESCUE_CANDIDATE& selected_part = m_Rescuer->m_all_candidates[row];
 
     wxVector<wxVariant> data;
-    BOOST_FOREACH( SCH_COMPONENT* each_component, *m_Rescuer->GetComponents() )
+    for( SCH_COMPONENT* each_component : *m_Rescuer->GetComponents() )
     {
         if( each_component->GetPartName() != selected_part.GetRequestedName() )
             continue;
@@ -158,7 +158,7 @@ void DIALOG_RESCUE_EACH::PopulateInstanceList()
         SCH_FIELD* valueField = each_component->GetField( 1 );
 
         data.clear();
-        data.push_back( each_component->GetRef( m_Parent->GetCurrentSheet().Last() ) );
+        data.push_back( each_component->GetRef( & m_Parent->GetCurrentSheet() ) );
         data.push_back( valueField ? valueField->GetText() : wxT( "" ) );
         m_ListOfInstances->AppendItem( data );
 
@@ -288,7 +288,7 @@ void DIALOG_RESCUE_EACH::OnNeverShowClick( wxCommandEvent& aEvent )
 
     if( resp == wxID_YES )
     {
-        m_Config->Write( RESCUE_NEVER_SHOW_KEY, true );
+        m_Config->Write( RescueNeverShowEntry, true );
         m_Rescuer->m_chosen_candidates.clear();
         Close();
     }

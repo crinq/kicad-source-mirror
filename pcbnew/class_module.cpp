@@ -1,10 +1,10 @@
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
- * Copyright (C) 2015 Jean-Pierre Charras, jp.charras at wanadoo.fr
+ * Copyright (C) 2016 Jean-Pierre Charras, jp.charras at wanadoo.fr
  * Copyright (C) 2015 SoftPLC Corporation, Dick Hollenbeck <dick@softplc.com>
  * Copyright (C) 2015 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 1992-2015 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -115,6 +115,7 @@ MODULE::MODULE( const MODULE& aModule ) :
     for( D_PAD* pad = aModule.m_Pads;  pad;  pad = pad->Next() )
     {
         D_PAD* newpad = new D_PAD( *pad );
+        assert( newpad->GetNet() == pad->GetNet() );
         newpad->SetParent( this );
         m_Pads.PushBack( newpad );
     }
@@ -186,7 +187,7 @@ void MODULE::ClearAllNets()
     // Force the ORPHANED dummy net info for all pads.
     // ORPHANED dummy net does not depend on a board
     for( D_PAD* pad = Pads(); pad; pad = pad->Next() )
-        pad->SetNetCode( NETINFO_LIST::FORCE_ORPHANED );
+        pad->SetNetCode( NETINFO_LIST::ORPHANED );
 }
 
 
@@ -575,7 +576,9 @@ void MODULE::GetMsgPanelInfo( std::vector< MSG_PANEL_ITEM >& aList )
     // display schematic path
     aList.push_back( MSG_PANEL_ITEM( _( "Netlist Path" ), m_Path, BROWN ) );
 
-    aList.push_back( MSG_PANEL_ITEM( _( "Layer" ), GetLayerName(), RED ) );
+    // display the board side placement
+    aList.push_back( MSG_PANEL_ITEM( _( "Board Side" ),
+                     IsFlipped()? _( "Back (Flipped)" ) : _( "Front" ), RED ) );
 
     EDA_ITEM* PtStruct = m_Pads;
     nbpad = 0;
@@ -599,8 +602,8 @@ void MODULE::GetMsgPanelInfo( std::vector< MSG_PANEL_ITEM >& aList )
 
     aList.push_back( MSG_PANEL_ITEM( _( "Status" ), msg, MAGENTA ) );
 
-    msg.Printf( wxT( "%.1f" ), m_Orient / 10.0 );
-    aList.push_back( MSG_PANEL_ITEM( _( "Angle" ), msg, BROWN ) );
+    msg.Printf( wxT( "%.1f" ), GetOrientationDegrees() );
+    aList.push_back( MSG_PANEL_ITEM( _( "Rotation" ), msg, BROWN ) );
 
     // Controls on right side of the dialog
     switch( m_Attributs & 255 )
@@ -850,7 +853,7 @@ EDA_ITEM* MODULE::Clone() const
 }
 
 
-void MODULE::RunOnChildren( boost::function<void (BOARD_ITEM*)> aFunction )
+void MODULE::RunOnChildren( std::function<void (BOARD_ITEM*)> aFunction )
 {
     try
     {
@@ -863,7 +866,7 @@ void MODULE::RunOnChildren( boost::function<void (BOARD_ITEM*)> aFunction )
         aFunction( static_cast<BOARD_ITEM*>( m_Reference ) );
         aFunction( static_cast<BOARD_ITEM*>( m_Value ) );
     }
-    catch( boost::bad_function_call& e )
+    catch( std::bad_function_call& e )
     {
         DisplayError( NULL, wxT( "Error running MODULE::RunOnChildren" ) );
     }
@@ -899,6 +902,10 @@ void MODULE::ViewGetLayers( int aLayers[], int& aCount ) const
 
     switch( m_Layer )
     {
+
+    default:
+        wxASSERT_MSG( false, "Illegal layer" );    // do you really have modules placed on other layers?
+        // pass through
     case F_Cu:
         aLayers[1] = ITEM_GAL_LAYER( MOD_FR_VISIBLE );
         break;
@@ -906,19 +913,20 @@ void MODULE::ViewGetLayers( int aLayers[], int& aCount ) const
     case B_Cu:
         aLayers[1] = ITEM_GAL_LAYER( MOD_BK_VISIBLE );
         break;
-
-    default:
-        assert( false );    // do you really have modules placed on inner layers?
-        break;
     }
 }
 
 
 unsigned int MODULE::ViewGetLOD( int aLayer ) const
 {
-    // Currently there is only one layer, so there is nothing to check
-//    if( aLayer == ITEM_GAL_LAYER( ANCHOR_VISIBLE ) )
+    int layer = ( m_Layer == F_Cu ) ? MOD_FR_VISIBLE :
+                ( m_Layer == B_Cu ) ? MOD_BK_VISIBLE : ANCHOR_VISIBLE;
+
+    // Currently it is only for anchor layer
+    if( m_view->IsLayerVisible( ITEM_GAL_LAYER( layer ) ) )
         return 30;
+
+    return std::numeric_limits<unsigned int>::max();
 }
 
 
@@ -1164,17 +1172,19 @@ BOARD_ITEM* MODULE::DuplicateAndAddItem( const BOARD_ITEM* aItem,
                                          bool aIncrementPadNumbers )
 {
     BOARD_ITEM* new_item = NULL;
+    D_PAD* new_pad = NULL;
 
     switch( aItem->Type() )
     {
     case PCB_PAD_T:
     {
-        D_PAD* new_pad = new D_PAD( *static_cast<const D_PAD*>( aItem ) );
+        new_pad = new D_PAD( *static_cast<const D_PAD*>( aItem ) );
 
         Pads().PushBack( new_pad );
         new_item = new_pad;
         break;
     }
+
     case PCB_MODULE_TEXT_T:
     {
         const TEXTE_MODULE* old_text = static_cast<const TEXTE_MODULE*>( aItem );
@@ -1190,6 +1200,7 @@ BOARD_ITEM* MODULE::DuplicateAndAddItem( const BOARD_ITEM* aItem,
         }
         break;
     }
+
     case PCB_MODULE_EDGE_T:
     {
         EDGE_MODULE* new_edge = new EDGE_MODULE(
@@ -1199,6 +1210,7 @@ BOARD_ITEM* MODULE::DuplicateAndAddItem( const BOARD_ITEM* aItem,
         new_item = new_edge;
         break;
     }
+
     case PCB_MODULE_T:
         // Ignore the module itself
         break;
@@ -1210,9 +1222,9 @@ BOARD_ITEM* MODULE::DuplicateAndAddItem( const BOARD_ITEM* aItem,
         break;
     }
 
-    if( aIncrementPadNumbers && new_item )
+    if( aIncrementPadNumbers && new_pad )
     {
-        new_item->IncrementItemReference();
+        new_pad->IncrementPadName( true, true );
     }
 
     return new_item;
@@ -1255,35 +1267,6 @@ wxString MODULE::GetReferencePrefix() const
     prefix = prefix.Mid( 0, strIndex );
 
     return prefix;
-}
-
-
-bool MODULE::IncrementItemReference()
-{
-    // Take the next available module number
-    return IncrementReference( true );
-}
-
-
-bool MODULE::IncrementReference( bool aFillSequenceGaps )
-{
-    BOARD* board = GetBoard();
-
-    if( !board )
-        return false;
-
-    bool success = false;
-    const wxString prefix = GetReferencePrefix();
-    const wxString newReference = board->GetNextModuleReferenceWithPrefix(
-            prefix, aFillSequenceGaps );
-
-    if( !newReference.IsEmpty() )
-    {
-        SetReference( newReference );
-        success = true;
-    }
-
-    return success;
 }
 
 

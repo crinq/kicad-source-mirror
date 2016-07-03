@@ -48,7 +48,7 @@
 #include <cvpcb_mainframe.h>
 #include <class_DisplayFootprintsFrame.h>
 #include <cvpcb_id.h>
-#include <cvstruct.h>
+#include <listview_classes.h>
 
 #include <3d_viewer.h>
 
@@ -189,9 +189,11 @@ void DISPLAY_FOOTPRINTS_FRAME::ReCreateOptToolbar()
                                KiBitmap( unit_mm_xpm ),
                                _( "Units in millimeters" ), wxITEM_CHECK );
 
+#ifndef __APPLE__
     m_optionsToolBar->AddTool( ID_TB_OPTIONS_SELECT_CURSOR, wxEmptyString,
                                KiBitmap( cursor_shape_xpm ),
                                _( "Change cursor shape" ), wxITEM_CHECK  );
+#endif // !__APPLE__
 
     m_optionsToolBar->AddSeparator();
     m_optionsToolBar->AddTool( ID_TB_OPTIONS_SHOW_PADS_SKETCH, wxEmptyString,
@@ -315,7 +317,8 @@ void DISPLAY_FOOTPRINTS_FRAME::OnSelectOptionToolbar( wxCommandEvent& event )
 }
 
 
-bool DISPLAY_FOOTPRINTS_FRAME::GeneralControl( wxDC* aDC, const wxPoint& aPosition, int aHotKey )
+bool DISPLAY_FOOTPRINTS_FRAME::GeneralControl( wxDC* aDC, const wxPoint& aPosition,
+        EDA_KEY aHotKey )
 {
     bool eventHandled = true;
 
@@ -486,7 +489,7 @@ void DISPLAY_FOOTPRINTS_FRAME::InitDisplay()
 
     CVPCB_MAINFRAME* parentframe = (CVPCB_MAINFRAME *) GetParent();
 
-    wxString footprintName = parentframe->m_footprintListBox->GetSelectedFootprint();
+    wxString footprintName = parentframe->GetSelectedFootprint();
 
     if( !footprintName.IsEmpty() )
     {
@@ -494,7 +497,7 @@ void DISPLAY_FOOTPRINTS_FRAME::InitDisplay()
 
         SetTitle( msg );
         const FOOTPRINT_INFO* module_info =
-                parentframe->m_footprints.GetModuleInfo( footprintName );
+                parentframe->m_FootprintsList.GetModuleInfo( footprintName );
 
         const wxChar* libname;
 

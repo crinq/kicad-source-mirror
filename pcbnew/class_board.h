@@ -294,15 +294,13 @@ public:
      */
     BOARD_ITEM* Remove( BOARD_ITEM* aBoardItem );
 
-    BOARD_ITEM* DuplicateAndAddItem( const BOARD_ITEM* aItem,
-                                     bool aIncrementReferences );
-
     /**
-     * Function GetNextModuleReferenceWithPrefix
-     * Get the next available module reference with this prefix
+     * Function DuplicateAndAddItem
+     * duplicates  an item, and add it to the board list.
+     * @param aItem The item to duplicate.
+     * @return BOARD_ITEM* \a the new item which was added.
      */
-    wxString GetNextModuleReferenceWithPrefix( const wxString& aPrefix,
-                                               bool aFillSequenceGaps );
+    BOARD_ITEM* DuplicateAndAddItem( const BOARD_ITEM* aItem );
 
     /**
      * Function GetRatsnest()
@@ -819,6 +817,11 @@ public:
     void AppendNet( NETINFO_ITEM* aNewNet )
     {
         m_NetInfo.AppendNet( aNewNet );
+    }
+
+    NETINFO_LIST& GetNetInfo()
+    {
+        return m_NetInfo;
     }
 
 #ifndef SWIG

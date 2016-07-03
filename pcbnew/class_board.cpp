@@ -672,6 +672,10 @@ void BOARD::Add( BOARD_ITEM* aBoardItem, int aControl )
 
     switch( aBoardItem->Type() )
     {
+    case PCB_NETINFO_T:
+        aBoardItem->SetParent( this );
+        m_NetInfo.AppendNet( (NETINFO_ITEM*) aBoardItem );
+
     // this one uses a vector
     case PCB_MARKER_T:
         aBoardItem->SetParent( this );
@@ -759,6 +763,12 @@ BOARD_ITEM* BOARD::Remove( BOARD_ITEM* aBoardItem )
 
     switch( aBoardItem->Type() )
     {
+    case PCB_NETINFO_T:
+    {
+        NETINFO_ITEM* item = (NETINFO_ITEM*) aBoardItem;
+        m_NetInfo.RemoveNet( item );
+        break;
+    }
     case PCB_MARKER_T:
 
         // find the item in the vector, then remove it
@@ -1252,7 +1262,7 @@ NETINFO_ITEM* BOARD::FindNet( int aNetcode ) const
     wxASSERT( m_NetInfo.GetNetCount() > 0 );    // net zero should exist
 
     if( aNetcode == NETINFO_LIST::UNCONNECTED && m_NetInfo.GetNetCount() == 0 )
-        return &NETINFO_LIST::ORPHANED;
+        return &NETINFO_LIST::ORPHANED_ITEM;
     else
         return m_NetInfo.GetNetItem( aNetcode );
 }
@@ -2264,8 +2274,6 @@ void BOARD::ReplaceNetlist( NETLIST& aNetlist, bool aDeleteSinglePadNets,
     unsigned       i;
     wxPoint        bestPosition;
     wxString       msg;
-    D_PAD*         pad;
-    MODULE*        footprint;
     std::vector<MODULE*> newFootprints;
 
     if( !IsEmpty() )
@@ -2293,6 +2301,7 @@ void BOARD::ReplaceNetlist( NETLIST& aNetlist, bool aDeleteSinglePadNets,
     for( i = 0;  i < aNetlist.GetCount();  i++ )
     {
         COMPONENT* component = aNetlist.GetComponent( i );
+        MODULE* footprint;
 
         if( aReporter )
         {
@@ -2456,7 +2465,7 @@ void BOARD::ReplaceNetlist( NETLIST& aNetlist, bool aDeleteSinglePadNets,
             continue;
 
         // At this point, the component footprint is updated.  Now update the nets.
-        for( pad = footprint->Pads();  pad;  pad = pad->Next() )
+        for( D_PAD* pad = footprint->Pads();  pad;  pad = pad->Next() )
         {
             COMPONENT_NET net = component->GetNet( pad->GetPadName() );
 
@@ -2554,9 +2563,9 @@ void BOARD::ReplaceNetlist( NETLIST& aNetlist, bool aDeleteSinglePadNets,
         D_PAD*      pad = NULL;
         D_PAD*      previouspad = NULL;
 
-        for( unsigned ii = 0; ii < padlist.size(); ii++ )
+        for( unsigned kk = 0; kk < padlist.size(); kk++ )
         {
-            pad = padlist[ii];
+            pad = padlist[kk];
 
             if( pad->GetNetname().IsEmpty() )
                 continue;
@@ -2673,8 +2682,7 @@ void BOARD::ReplaceNetlist( NETLIST& aNetlist, bool aDeleteSinglePadNets,
 }
 
 
-BOARD_ITEM* BOARD::DuplicateAndAddItem( const BOARD_ITEM* aItem,
-                                        bool aIncrementReferences )
+BOARD_ITEM* BOARD::DuplicateAndAddItem( const BOARD_ITEM* aItem )
 {
     BOARD_ITEM* new_item = NULL;
 
@@ -2698,55 +2706,14 @@ BOARD_ITEM* BOARD::DuplicateAndAddItem( const BOARD_ITEM* aItem,
 
     default:
         // Un-handled item for duplication
-        wxASSERT_MSG( false, "Duplication not supported for items of class "
-                      + aItem->GetClass() );
+        new_item = NULL;
         break;
     }
 
     if( new_item )
-    {
-        if( aIncrementReferences )
-            new_item->IncrementItemReference();
-
         Add( new_item );
-    }
 
     return new_item;
-}
-
-
-wxString BOARD::GetNextModuleReferenceWithPrefix( const wxString& aPrefix,
-                                                  bool aFillSequenceGaps )
-{
-    wxString nextRef;
-
-    std::set<int> usedNumbers;
-
-    for( MODULE* module = m_Modules; module; module = module->Next() )
-    {
-        const wxString ref = module->GetReference();
-        wxString remainder;
-
-        // ONly interested in modules with the right prefix
-        if( !ref.StartsWith( aPrefix, &remainder ) )
-            continue;
-
-        // the suffix must be a number
-        if( !remainder.IsNumber() )
-            continue;
-
-        long number;
-        if( remainder.ToCLong( &number ) )
-            usedNumbers.insert( number );
-    }
-
-    if( usedNumbers.size() )
-    {
-        int nextNum = getNextNumberInSequence( usedNumbers, aFillSequenceGaps );
-        nextRef = wxString::Format( wxT( "%s%i" ), aPrefix, nextNum );
-    }
-
-    return nextRef;
 }
 
 

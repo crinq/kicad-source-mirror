@@ -1,7 +1,7 @@
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
- * Copyright (C) 1992-2012 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -63,7 +63,8 @@
 #include <footprint_wizard_frame.h>
 #include <pcbnew_config.h>
 
-#include <boost/bind.hpp>
+#include <functional>
+using namespace std::placeholders;
 
 
 // Functions defined in block_module_editor, but used here
@@ -344,7 +345,7 @@ void FOOTPRINT_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
             }
 
             FOOTPRINT_WIZARD_FRAME* wizard = (FOOTPRINT_WIZARD_FRAME*) Kiway().Player(
-                        FRAME_PCB_FOOTPRINT_WIZARD_MODAL, true );
+                        FRAME_PCB_FOOTPRINT_WIZARD_MODAL, true, this );
 
             if( wizard->ShowModal( NULL, this ) )
             {
@@ -463,7 +464,8 @@ void FOOTPRINT_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
                 if( pcbframe->IsGalCanvasActive() )
                 {
                     KIGFX::VIEW* view = pcbframe->GetGalCanvas()->GetView();
-                    source_module->RunOnChildren( boost::bind( &KIGFX::VIEW::Remove, view, _1 ) );
+                    source_module->RunOnChildren( std::bind( &KIGFX::VIEW::Remove, view, 
+                                                                  std::placeholders::_1 ) );
                     view->Remove( source_module );
                 }
 
@@ -497,7 +499,8 @@ void FOOTPRINT_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
                 ratsnest->Recalculate();
 
                 KIGFX::VIEW* view = pcbframe->GetGalCanvas()->GetView();
-                newmodule->RunOnChildren( boost::bind( &KIGFX::VIEW::Add, view, _1 ) );
+                newmodule->RunOnChildren( std::bind( &KIGFX::VIEW::Add, view, 
+                                                       std::placeholders::_1 ) );
                 view->Add( newmodule );
                 pcbframe->GetGalCanvas()->ForceRefresh();
             }
@@ -944,6 +947,10 @@ void FOOTPRINT_EDIT_FRAME::OnVerticalToolbar( wxCommandEvent& aEvent )
     switch( id )
     {
     case ID_NO_TOOL_SELECTED:
+        break;
+
+    case ID_ZOOM_SELECTION:
+        SetToolID( id, wxCURSOR_MAGNIFIER, _( "Zoom to selection" ) );
         break;
 
     case ID_MODEDIT_LINE_TOOL:

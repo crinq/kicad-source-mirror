@@ -18,7 +18,6 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "class_draw_panel_gal.h"
@@ -274,7 +273,7 @@ int LENGTH_TUNER_TOOL::mainLoop( PNS_ROUTER_MODE aMode )
     m_ctls->ShowCursor( true );
     m_frame->UndoRedoBlock( true );
 
-    std::auto_ptr<TUNER_TOOL_MENU> ctxMenu( new TUNER_TOOL_MENU( m_board ) );
+    std::unique_ptr<TUNER_TOOL_MENU> ctxMenu( new TUNER_TOOL_MENU( m_board ) );
     SetContextMenu( ctxMenu.get() );
 
     // Main loop: keep receiving events

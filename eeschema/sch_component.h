@@ -36,7 +36,6 @@
 #include <sch_field.h>
 #include <transform.h>
 #include <general.h>
-#include <boost/weak_ptr.hpp>
 #include <vector>
 #include <lib_draw_item.h>
 
@@ -51,9 +50,9 @@ class SCH_COLLECTOR;
 
 
 /// A container for several SCH_FIELD items
-typedef std::vector<SCH_FIELD>      SCH_FIELDS;
+typedef std::vector<SCH_FIELD>    SCH_FIELDS;
 
-typedef boost::weak_ptr<LIB_PART>   PART_REF;
+typedef std::weak_ptr<LIB_PART>   PART_REF;
 
 
 /**
@@ -244,10 +243,10 @@ public:
     /**
      * Function ClearAnnotation
      * clears exiting component annotation ( i.i IC23 changed to IC? and part reset to 1)
-     * @param aSheet: SCH_SHEET value: if NULL remove all annotations,
-     *                else remove annotation relative to \a aSheet.
+     * @param aSheetPath: SCH_SHEET_PATH value: if NULL remove all annotations,
+     *                    else remove annotation relative to this sheetpath
      */
-    void ClearAnnotation( SCH_SHEET* aSheet );
+    void ClearAnnotation( SCH_SHEET_PATH* aSheetPath );
 
     /**
      * Function SetTimeStamp
@@ -391,8 +390,8 @@ public:
 
     void SwapData( SCH_ITEM* aItem );
 
-    // returns a unique ID, in the form of a path determined by \a aSheet.
-    wxString GetPath( const SCH_SHEET* sheet ) const;
+    // returns a unique ID, in the form of a path.
+    wxString GetPath( const SCH_SHEET_PATH* sheet ) const;
 
     /**
      * Function IsReferenceStringValid (static)
@@ -413,12 +412,12 @@ public:
      * Function GetRef
      * returns the reference, for the given sheet path.
      */
-    const wxString GetRef( const SCH_SHEET* sheet );
+    const wxString GetRef( const SCH_SHEET_PATH* sheet );
 
     /**
      * Set the reference, for the given sheet path.
      */
-    void SetRef( const SCH_SHEET* aSheet, const wxString& ref );
+    void SetRef( const SCH_SHEET_PATH* sheet, const wxString& ref );
 
     /**
      * Function AddHierarchicalReference
@@ -432,11 +431,11 @@ public:
                                    const wxString& aRef,
                                    int             aMulti );
 
-    // returns the unit selection, for the given sheet.
-    int GetUnitSelection( SCH_SHEET* aSheet );
+    // returns the unit selection, for the given sheet path.
+    int GetUnitSelection( SCH_SHEET_PATH* aSheet );
 
-    // Set the unit selection, for the given sheet.
-    void SetUnitSelection( SCH_SHEET* aSheet, int aUnitSelection );
+    // Set the unit selection, for the given sheet path.
+    void SetUnitSelection( SCH_SHEET_PATH* aSheet, int aUnitSelection );
 
     // Geometric transforms (used in block operations):
 

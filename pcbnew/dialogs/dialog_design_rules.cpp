@@ -47,8 +47,6 @@
 #include <wx/generic/gridctrl.h>
 #include <dialog_design_rules_aux_helper_class.h>
 
-#include <boost/make_shared.hpp>
-
 // Column labels for net lists
 #define NET_TITLE       _( "Net" )
 #define CLASS_TITLE     _( "Class" )
@@ -505,7 +503,7 @@ void DIALOG_DESIGN_RULES::CopyRulesListToBoard()
     // Copy other NetClasses :
     for( int row = 1; row < m_grid->GetNumberRows();  ++row )
     {
-        NETCLASSPTR nc = boost::make_shared<NETCLASS>( m_grid->GetRowLabelValue( row ) );
+        NETCLASSPTR nc = std::make_shared<NETCLASS>( m_grid->GetRowLabelValue( row ) );
 
         if( !m_BrdSettings->m_NetClasses.Add( nc ) )
         {
@@ -931,7 +929,7 @@ bool DIALOG_DESIGN_RULES::TestDataValidity( wxString* aErrorMsg )
         if( viadia < minViaDia )
         {
             result = false;
-            msg.Printf( _( "%s: <b>Via Diameter</b> &lt; <b>Minimun Via Diameter</b><br>" ),
+            msg.Printf( _( "%s: <b>Via Diameter</b> &lt; <b>Minimum Via Diameter</b><br>" ),
                         GetChars( m_grid->GetRowLabelValue( row ) ) );
             errorMsg += msg;
         }

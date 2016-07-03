@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2009 Jean-Pierre Charras, jaen-pierre.charras@gipsa-lab.inpg.com
  * Copyright (C) 2011 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 1992-2011 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -516,7 +516,7 @@ public:
      * @param aPosition The current cursor position in logical (drawing) units.
      * @param aHotKey A key event used for application specific control if not zero.
      */
-    virtual bool GeneralControl( wxDC* aDC, const wxPoint& aPosition, int aHotKey = 0 )
+    virtual bool GeneralControl( wxDC* aDC, const wxPoint& aPosition, EDA_KEY aHotKey = 0 )
     {
         return false;
     }
@@ -641,8 +641,12 @@ public:
      * Function HandleBlockBegin
      * initializes the block command including the command type, initial position,
      * and other variables.
+     *
+     * @param aExplicitCommand - if this is given, begin with this command, rather
+     *  than looking up the command from aKey.
      */
-    virtual bool HandleBlockBegin( wxDC* aDC, int aKey, const wxPoint& aPosition );
+    virtual bool HandleBlockBegin( wxDC* aDC, EDA_KEY aKey, const wxPoint& aPosition,
+            int aExplicitCommand = 0 );
 
     /**
      * Function BlockCommand
@@ -653,7 +657,7 @@ public:
      * @param aKey = the key modifiers (Alt, Shift ...)
      * @return the block command id (BLOCK_MOVE, BLOCK_COPY...)
      */
-    virtual int BlockCommand( int aKey );
+    virtual int BlockCommand( EDA_KEY aKey );
 
     /**
      * Function HandleBlockPlace( )

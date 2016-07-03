@@ -1,9 +1,8 @@
-
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
  * Copyright (C) 2007-2011 SoftPLC Corporation, Dick Hollenbeck <dick@softplc.com>
- * Copyright (C) 2015 KiCad Developers, see change_log.txt for contributors.
+ * Copyright (C) 2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,11 +33,6 @@
 #if !defined( HAVE_FGETC_NOLOCK )
 #define getc_unlocked getc
 #endif
-
-
-// This file defines 3 classes and some functions useful for working with text files
-// and is named "richio" after its author, Richard Hollenbeck, aka Dick Hollenbeck.
-
 
 
 static int vprint( std::string* result, const char* format, va_list ap )
@@ -207,8 +201,6 @@ FILE_LINE_READER::FILE_LINE_READER( const wxString& aFileName,
         THROW_IO_ERROR( msg );
     }
 
-    setvbuf( fp, NULL, _IOFBF, BUFSIZ * 8 );
-
     source  = aFileName;
     lineNum = aStartingLineNumber;
 }
@@ -222,12 +214,6 @@ FILE_LINE_READER::FILE_LINE_READER( FILE* aFile, const wxString& aFileName,
     iOwn( doOwn ),
     fp( aFile )
 {
-    if( doOwn && ftell( aFile ) == 0L )
-    {
-#ifndef __WXMAC__
-        setvbuf( fp, NULL, _IOFBF, BUFSIZ * 8 );
-#endif
-    }
     source  = aFileName;
     lineNum = aStartingLineNumber;
 }

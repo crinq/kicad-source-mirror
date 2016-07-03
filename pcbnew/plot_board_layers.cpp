@@ -380,6 +380,7 @@ void PlotStandardLayer( BOARD *aBoard, PLOTTER* aPlotter,
                 // Fall through:
             case PAD_SHAPE_TRAPEZOID:
             case PAD_SHAPE_RECT:
+            case PAD_SHAPE_ROUNDRECT:
             default:
                 itemplotter.PlotPad( pad, color, plotMode );
                 break;
@@ -867,9 +868,8 @@ static void initializePlotter( PLOTTER *aPlotter, BOARD * aBoard,
        most of that taken from the options */
     aPlotter->SetPageSettings( *sheet_info );
 
-    aPlotter->SetViewport( offset, IU_PER_DECIMILS, compound_scale,
+    aPlotter->SetViewport( offset, IU_PER_MILS/10, compound_scale,
                            aPlotOpts->GetMirror() );
-
     // has meaning only for gerber plotter. Must be called only after SetViewport
     aPlotter->SetGerberCoordinatesFormat( aPlotOpts->GetGerberPrecision() );
 
@@ -903,20 +903,9 @@ static void ConfigureHPGLPenSizes( HPGL_PLOTTER *aPlotter,
     int pen_diam = KiROUND( aPlotOpts->GetHPGLPenDiameter() * IU_PER_MILS /
                             aPlotOpts->GetScale() );
 
-    // compute pen_overlay (value comes in mils) in pcb units with plot scale
-    if( aPlotOpts->GetHPGLPenOverlay() < 0 )
-        aPlotOpts->SetHPGLPenOverlay( 0 );
-
-    if( aPlotOpts->GetHPGLPenOverlay() >= aPlotOpts->GetHPGLPenDiameter() )
-        aPlotOpts->SetHPGLPenOverlay( aPlotOpts->GetHPGLPenDiameter() - 1 );
-
-    int pen_overlay = KiROUND( aPlotOpts->GetHPGLPenOverlay() * IU_PER_MILS /
-                               aPlotOpts->GetScale() );
-
     // Set HPGL-specific options and start
     aPlotter->SetPenSpeed( aPlotOpts->GetHPGLPenSpeed() );
     aPlotter->SetPenNumber( aPlotOpts->GetHPGLPenNum() );
-    aPlotter->SetPenOverlap( pen_overlay );
     aPlotter->SetPenDiameter( pen_diam );
 }
 
