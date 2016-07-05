@@ -967,7 +967,10 @@ void EDA_DRAW_PANEL::OnMouseWheel( wxMouseEvent& event )
 
     int axis = event.GetWheelAxis();
     int wheelRotation = event.GetWheelRotation();
-
+    
+    double scale = GetParent()->GetScreen()->GetScalingFactor();
+    wxPoint center = GetParent()->GetScrollCenterPosition();
+    
     if( m_enableMousewheelPan )
     {
         wxPoint newStart = GetViewStart();
@@ -1000,9 +1003,11 @@ void EDA_DRAW_PANEL::OnMouseWheel( wxMouseEvent& event )
            int delta_move = event.GetWheelRotation();
           switch(event.GetWheelAxis()){
              case wxMOUSE_WHEEL_VERTICAL:
+               center.y -= KiROUND( (double) delta_move / scale );
                Scroll(x, y - delta_move / ppuy);
                break;
              case wxMOUSE_WHEEL_HORIZONTAL:
+               center.x += KiROUND( (double) delta_move / scale );
                Scroll(x + delta_move / ppux, y);
                break;
              default:
@@ -1030,9 +1035,11 @@ void EDA_DRAW_PANEL::OnMouseWheel( wxMouseEvent& event )
               int delta_move = event.GetWheelRotation();
              switch(event.GetWheelAxis()){
                case wxMOUSE_WHEEL_VERTICAL:
+                 center.y -= KiROUND( (double) delta_move / scale );
                  Scroll(x, y - delta_move / ppuy);
                  break;
                case wxMOUSE_WHEEL_HORIZONTAL:
+                 center.x += KiROUND( (double) delta_move / scale );
                  Scroll(x + delta_move / ppux, y);
                  break;
                default:
@@ -1041,6 +1048,8 @@ void EDA_DRAW_PANEL::OnMouseWheel( wxMouseEvent& event )
           }
     }
 
+    GetParent()->SetScrollCenterPosition( center );
+    
     if( cmd.GetId() )
         GetEventHandler()->ProcessEvent( cmd );
     event.Skip();
