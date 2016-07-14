@@ -134,6 +134,18 @@ int SCH_SHEET::GetScreenCount() const
 }
 
 
+SCH_SHEET* SCH_SHEET::GetRootSheet()
+{
+    SCH_SHEET* sheet = dynamic_cast< SCH_SHEET* >( GetParent() );
+
+    if( sheet == NULL )
+        return this;
+
+    // Recurse until a sheet is found with no parent which is the root sheet.
+    return sheet->GetRootSheet();
+}
+
+
 bool SCH_SHEET::Save( FILE* aFile ) const
 {
     if( fprintf( aFile, "$Sheet\n" ) == EOF
@@ -765,6 +777,7 @@ bool SCH_SHEET::Load( SCH_EDIT_FRAME* aFrame )
     bool success = true;
 
     SCH_SCREEN* screen = NULL;
+
     if( !m_screen )
     {
         g_RootSheet->SearchHierarchy( m_fileName, &screen );
@@ -789,9 +802,16 @@ bool SCH_SHEET::Load( SCH_EDIT_FRAME* aFrame )
                 {
                     if( bs->Type() == SCH_SHEET_T )
                     {
-                        SCH_SHEET* sheetstruct = (SCH_SHEET*) bs;
+                        SCH_SHEET* sheet = (SCH_SHEET*) bs;
 
-                        if( !sheetstruct->Load( aFrame ) )
+                        // Set the parent to this sheet.  This effectively creates a method
+                        // to find the root sheet from any sheet so a pointer to the root
+                        // sheet does not need to be stored globally.  Note: this is not the
+                        // same as a hierarchy.  Complex hierarchies can have multiple copies
+                        // of a sheet.  This only provides a simple tree to find the root sheet.
+                        sheet->SetParent( this );
+
+                        if( !sheet->Load( aFrame ) )
                             success = false;
                     }
 
@@ -1022,8 +1042,7 @@ void SCH_SHEET::GetConnectionPoints( std::vector< wxPoint >& aPoints ) const
 }
 
 
-SEARCH_RESULT SCH_SHEET::Visit( INSPECTOR* aInspector, const void* aTestData,
-                                const KICAD_T aFilterTypes[] )
+SEARCH_RESULT SCH_SHEET::Visit( INSPECTOR aInspector, void* testData, const KICAD_T aFilterTypes[] )
 {
     KICAD_T stype;
 
@@ -1032,7 +1051,7 @@ SEARCH_RESULT SCH_SHEET::Visit( INSPECTOR* aInspector, const void* aTestData,
         // If caller wants to inspect my type
         if( stype == Type() )
         {
-            if( SEARCH_QUIT == aInspector->Inspect( this, NULL ) )
+            if( SEARCH_QUIT == aInspector( this, NULL ) )
                 return SEARCH_QUIT;
         }
         else if( stype == SCH_SHEET_PIN_T )
@@ -1040,7 +1059,7 @@ SEARCH_RESULT SCH_SHEET::Visit( INSPECTOR* aInspector, const void* aTestData,
             // Test the sheet labels.
             for( size_t i = 0;  i < m_pins.size();  i++ )
             {
-                if( SEARCH_QUIT == aInspector->Inspect( &m_pins[ i ], (void*) this ) )
+                if( SEARCH_QUIT == aInspector( &m_pins[ i ], this ) )
                     return SEARCH_QUIT;
             }
         }

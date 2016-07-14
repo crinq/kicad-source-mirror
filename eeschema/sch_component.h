@@ -47,12 +47,16 @@ class NETLIST_OBJECT_LIST;
 class LIB_PART;
 class PART_LIBS;
 class SCH_COLLECTOR;
+class SCH_SCREEN;
 
 
 /// A container for several SCH_FIELD items
 typedef std::vector<SCH_FIELD>    SCH_FIELDS;
 
 typedef std::weak_ptr<LIB_PART>   PART_REF;
+
+
+extern std::string toUTFTildaText( const wxString& txt );
 
 
 /**
@@ -141,6 +145,8 @@ public:
         return wxT( "SCH_COMPONENT" );
     }
 
+    const wxArrayString& GetPathsAndReferences() const { return m_PathsAndReferences; }
+
     /**
      * Virtual function IsMovableFromAnchorPoint
      * Return true for items which are moved with the anchor point at mouse cursor
@@ -188,6 +194,8 @@ public:
     void SetConvert( int aConvert );
 
     wxString GetPrefix() const { return m_prefix; }
+
+    void SetPrefix( const wxString& aPrefix ) { m_prefix = aPrefix; }
 
     TRANSFORM& GetTransform() const { return const_cast< TRANSFORM& >( m_transform ); }
 
@@ -306,7 +314,7 @@ public:
      * Function GetFieldCount
      * returns the number of fields in this component.
      */
-    int GetFieldCount() const { return (int) m_Fields.size(); }
+    int GetFieldCount() const { return (int)m_Fields.size(); }
 
     /**
      * Function GetFieldsAutoplaced
@@ -504,8 +512,7 @@ public:
 
     void GetConnectionPoints( std::vector<wxPoint>& aPoints ) const;
 
-    SEARCH_RESULT Visit( INSPECTOR* inspector, const void* testData,
-                                 const KICAD_T scanTypes[] );
+    SEARCH_RESULT Visit( INSPECTOR inspector, void* testData, const KICAD_T scanTypes[] ) override;
 
     /**
      * Function GetDrawItem().
